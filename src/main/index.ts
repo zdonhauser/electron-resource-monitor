@@ -62,9 +62,8 @@ function createWindow(): void {
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
-    // In production, files are packaged relative to the main process location
-    const rendererPath = join(__dirname, '../renderer/index.html')
-    mainWindow.loadFile(rendererPath)
+    // In production, load the renderer HTML file
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 

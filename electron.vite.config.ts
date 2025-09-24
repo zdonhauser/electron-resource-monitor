@@ -50,7 +50,7 @@ export default defineConfig({
     plugins: [react()],
     root: 'src/renderer',
     build: {
-      outDir: '../../dist-electron/renderer',
+      outDir: resolve(__dirname, 'dist-electron/renderer'),
       rollupOptions: {
         input: {
           index: resolve(__dirname, 'src/renderer/index.html')

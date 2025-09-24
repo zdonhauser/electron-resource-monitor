@@ -103,6 +103,7 @@ test-results.xml
 app/
 dist-electron/
 release/
+out/
 *.dmg
 *.zip
 *.tar.gz
