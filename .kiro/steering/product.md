@@ -2,13 +2,12 @@
 
 ## Resource Monitor Desktop App
 
-A privacy-first desktop application for macOS (Apple Silicon) that provides real-time system telemetry monitoring and visualization. The app streams, visualizes, and analyzes local machine vitals including CPU, GPU, memory, disk, network, and process statistics.
+A desktop application for macOS (Apple Silicon) that provides real-time system telemetry monitoring and visualization. The app streams, visualizes, and analyzes local machine vitals including CPU, GPU, memory, disk, network, and process statistics.
 
 ## Key Features
 
 - **Real-time Metrics**: Live system telemetry sampled every 250ms
 - **Interactive Visualizations**: Plotly-powered charts with pan/zoom capabilities
-- **Privacy-First**: All data stays local, no external connections
 - **Desktop Notifications**: Configurable alerts with threshold monitoring
 - **Data Export**: JSON/CSV export functionality
 - **Dark/Light Themes**: Full theme support with Tailwind CSS
