@@ -34,6 +34,12 @@ const Dashboard: React.FC = () => {
           <a href="#/alerts" className="block py-2 px-4 hover:bg-gray-700" data-testid="alerts-nav">
             {sidebarCollapsed ? '🔔' : '🔔 Alerts'}
           </a>
+          {/* Performance test link only in development */}
+          {import.meta.env.DEV && (
+            <a href="#/performance-test" className="block py-2 px-4 hover:bg-gray-700" data-testid="performance-nav">
+              {sidebarCollapsed ? '🚀' : '🚀 Performance Test'}
+            </a>
+          )}
         </nav>
       </div>
 

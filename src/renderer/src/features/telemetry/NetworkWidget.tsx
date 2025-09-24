@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
 import type { RootState } from '../../app/store'
 import type { NetworkInterface } from '../../../../shared/types/telemetry'
+import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
 
 const MAX_DATA_POINTS = 240 // 4 minutes at 1 second intervals
 
@@ -10,6 +11,7 @@ const NetworkWidget: React.FC = React.memo(() => {
   const networkData = useSelector((state: RootState) => state.telemetry.network.data)
   const latestNetwork = networkData[networkData.length - 1]
   const plotRef = useRef<HTMLDivElement>(null)
+
 
   const formatBytes = (bytes: number): string => {
     const units = ['B/s', 'KB/s', 'MB/s', 'GB/s']
@@ -44,7 +46,7 @@ const NetworkWidget: React.FC = React.memo(() => {
     const displayData = networkData.slice(-MAX_DATA_POINTS)
     const rxRates: number[] = []
     const txRates: number[] = []
-    const timestamps: Date[] = []
+    const timestamps: number[] = []
 
     // Get the main interface (usually the one with most traffic)
     const mainInterface = latestNetwork?.interfaces.find(iface =>
@@ -64,13 +66,82 @@ const NetworkWidget: React.FC = React.memo(() => {
 
         rxRates.push(rxRate)
         txRates.push(txRate)
-        timestamps.push(new Date(displayData[i].timestamp))
+        timestamps.push(displayData[i].timestamp)
       }
     }
 
     return { rxRates, txRates, timestamps }
   }
 
+  // Initialize chart once with empty data
+  useEffect(() => {
+    if (!plotRef.current) return
+
+    const initialData = [
+      {
+        x: [],
+        y: [],
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        name: 'Download',
+        line: { color: '#10B981', width: 2 },
+        yaxis: 'y'
+      },
+      {
+        x: [],
+        y: [],
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        name: 'Upload',
+        line: { color: '#F59E0B', width: 2 },
+        yaxis: 'y'
+      }
+    ]
+
+    const layout = {
+      autosize: true,
+      height: 200,
+      margin: { t: 10, r: 10, b: 30, l: 50 },
+      xaxis: {
+        type: 'date' as const,
+        title: { text: '' },
+        showgrid: false,
+        tickformat: '%H:%M:%S'
+      },
+      yaxis: {
+        title: { text: 'Speed (KB/s)' },
+        showgrid: true,
+        gridcolor: 'rgba(0,0,0,0.1)',
+        rangemode: 'tozero' as const
+      },
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { size: 10 },
+      legend: {
+        x: 1,
+        xanchor: 'right' as const,
+        y: 1,
+        bgcolor: 'rgba(0,0,0,0)',
+        orientation: 'h' as const
+      }
+    }
+
+    const config = {
+      displayModeBar: false,
+      responsive: true
+    }
+
+    // Initialize once with newPlot
+    Plotly.newPlot(plotRef.current, initialData, layout, config)
+
+    return () => {
+      if (plotRef.current) {
+        Plotly.purge(plotRef.current)
+      }
+    }
+  }, [])
+
+  // Update chart data using Plotly.react (optimized!)
   useEffect(() => {
     if (!plotRef.current || networkData.length === 0) return
 
@@ -78,7 +149,7 @@ const NetworkWidget: React.FC = React.memo(() => {
 
     if (timestamps.length === 0) return
 
-    const data = [
+    const updatedData = [
       {
         x: timestamps,
         y: rxRates.map(rate => rate / 1024), // Convert to KB/s
@@ -105,12 +176,12 @@ const NetworkWidget: React.FC = React.memo(() => {
       margin: { t: 10, r: 10, b: 30, l: 50 },
       xaxis: {
         type: 'date' as const,
-        title: '',
+        title: { text: '' },
         showgrid: false,
         tickformat: '%H:%M:%S'
       },
       yaxis: {
-        title: 'Speed (KB/s)',
+        title: { text: 'Speed (KB/s)' },
         showgrid: true,
         gridcolor: 'rgba(0,0,0,0.1)',
         rangemode: 'tozero' as const
@@ -132,13 +203,15 @@ const NetworkWidget: React.FC = React.memo(() => {
       responsive: true
     }
 
-    Plotly.newPlot(plotRef.current, data, layout, config)
+    // Use Plotly.react for efficient updates
+    const plotlyMeasurementId = measurePlotlyOperation('react', 'network-widget')
 
-    return () => {
-      if (plotRef.current) {
-        Plotly.purge(plotRef.current)
-      }
-    }
+    Plotly.react(plotRef.current, updatedData, layout, config).then(() => {
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    }).catch((error) => {
+      console.error('Plotly.react failed:', error)
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    })
   }, [networkData])
 
   const getMainInterface = (): NetworkInterface | null => {

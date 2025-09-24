@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
 import type { RootState } from '../../app/store'
+import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
 
 const MAX_DATA_POINTS = 240 // 60 seconds at 250ms intervals
 
@@ -10,17 +11,15 @@ const MemoryWidget: React.FC = React.memo(() => {
   const latestMemory = memoryData[memoryData.length - 1]
   const plotRef = useRef<HTMLDivElement>(null)
 
+
+  // Initialize chart once with empty data
   useEffect(() => {
-    if (!plotRef.current || memoryData.length === 0) return
+    if (!plotRef.current) return
 
-    // Take only the last MAX_DATA_POINTS
-    const displayData = memoryData.slice(-MAX_DATA_POINTS)
-    const totalGB = latestMemory ? latestMemory.total / (1024 * 1024 * 1024) : 16
-
-    const data = [
+    const initialData = [
       {
-        x: displayData.map(d => new Date(d.timestamp)),
-        y: displayData.map(d => d.used / (1024 * 1024 * 1024)),
+        x: [],
+        y: [],
         type: 'scatter' as const,
         mode: 'lines' as const,
         name: 'Used',
@@ -29,12 +28,12 @@ const MemoryWidget: React.FC = React.memo(() => {
         fillcolor: 'rgba(16, 185, 129, 0.2)'
       },
       {
-        x: displayData.map(d => new Date(d.timestamp)),
-        y: displayData.map(d => d.free / (1024 * 1024 * 1024)),
+        x: [],
+        y: [],
         type: 'scatter' as const,
         mode: 'lines' as const,
         name: 'Free',
-        line: { color: '#6B7280', width: 1, dash: 'dot' },
+        line: { color: '#6B7280', width: 1, dash: 'dot' as const },
         visible: 'legendonly' as const
       }
     ]
@@ -45,12 +44,85 @@ const MemoryWidget: React.FC = React.memo(() => {
       margin: { t: 10, r: 10, b: 30, l: 40 },
       xaxis: {
         type: 'date' as const,
-        title: '',
+        title: { text: '' },
         showgrid: false,
         tickformat: '%H:%M:%S'
       },
       yaxis: {
-        title: 'Memory (GB)',
+        title: { text: 'Memory (GB)' },
+        range: [0, 16], // Default range, will be updated
+        showgrid: true,
+        gridcolor: 'rgba(0,0,0,0.1)'
+      },
+      paper_bgcolor: 'transparent',
+      plot_bgcolor: 'transparent',
+      font: { size: 10 },
+      showlegend: true,
+      legend: {
+        x: 0.02,
+        y: 0.98,
+        bgcolor: 'transparent',
+        font: { size: 9 }
+      }
+    }
+
+    const config = {
+      displayModeBar: false,
+      responsive: true
+    }
+
+    // Initialize once with newPlot
+    Plotly.newPlot(plotRef.current, initialData, layout, config)
+
+    return () => {
+      if (plotRef.current) {
+        Plotly.purge(plotRef.current)
+      }
+    }
+  }, [])
+
+  // Update chart data using Plotly.react (optimized!)
+  useEffect(() => {
+    if (!plotRef.current || memoryData.length === 0) return
+
+    // Take only the last MAX_DATA_POINTS
+    const displayData = memoryData.slice(-MAX_DATA_POINTS)
+    const totalGB = latestMemory ? latestMemory.total / (1024 * 1024 * 1024) : 16
+
+    const updatedData = [
+      {
+        x: displayData.map(d => d.timestamp),
+        y: displayData.map(d => d.used / (1024 * 1024 * 1024)),
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        name: 'Used',
+        line: { color: '#10B981', width: 2 },
+        fill: 'tozeroy' as const,
+        fillcolor: 'rgba(16, 185, 129, 0.2)'
+      },
+      {
+        x: displayData.map(d => d.timestamp),
+        y: displayData.map(d => d.free / (1024 * 1024 * 1024)),
+        type: 'scatter' as const,
+        mode: 'lines' as const,
+        name: 'Free',
+        line: { color: '#6B7280', width: 1, dash: 'dot' as const },
+        visible: 'legendonly' as const
+      }
+    ]
+
+    const layout = {
+      autosize: true,
+      height: 200,
+      margin: { t: 10, r: 10, b: 30, l: 40 },
+      xaxis: {
+        type: 'date' as const,
+        title: { text: '' },
+        showgrid: false,
+        tickformat: '%H:%M:%S'
+      },
+      yaxis: {
+        title: { text: 'Memory (GB)' },
         range: [0, totalGB],
         showgrid: true,
         gridcolor: 'rgba(0,0,0,0.1)'
@@ -72,13 +144,15 @@ const MemoryWidget: React.FC = React.memo(() => {
       responsive: true
     }
 
-    Plotly.newPlot(plotRef.current, data, layout, config)
+    // Use Plotly.react for efficient updates
+    const plotlyMeasurementId = measurePlotlyOperation('react', 'memory-widget')
 
-    return () => {
-      if (plotRef.current) {
-        Plotly.purge(plotRef.current)
-      }
-    }
+    Plotly.react(plotRef.current, updatedData, layout, config).then(() => {
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    }).catch((error) => {
+      console.error('Plotly.react failed:', error)
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    })
   }, [memoryData, latestMemory])
 
   const formatBytes = (bytes: number) => {

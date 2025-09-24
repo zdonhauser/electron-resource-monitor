@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import type { RootState } from './app/store'
@@ -14,6 +14,13 @@ import {
 import Dashboard from './features/telemetry/Dashboard'
 import Settings from './features/settings/Settings'
 import Alerts from './features/alerts/Alerts'
+
+// Only import performance test page in development
+const PerformanceTestPage = import.meta.env.DEV 
+  ? React.lazy(() => import('./components/PerformanceTestPage'))
+  : null
+
+
 
 function App() {
   const dispatch = useDispatch()
@@ -77,6 +84,17 @@ function App() {
         <Route path="/" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/alerts" element={<Alerts />} />
+        {/* Performance test page only available in development */}
+        {import.meta.env.DEV && PerformanceTestPage && (
+          <Route 
+            path="/performance-test" 
+            element={
+              <Suspense fallback={<div className="p-6">Loading performance test...</div>}>
+                <PerformanceTestPage />
+              </Suspense>
+            } 
+          />
+        )}
       </Routes>
     </div>
   )

@@ -163,8 +163,64 @@ export class TelemetrySampler extends EventEmitter {
 
   private async getMemoryMetrics(): Promise<MemoryMetrics> {
     const totalMem = os.totalmem()
-    const freeMem = os.freemem()
-    const usedMem = totalMem - freeMem
+    let usedMem = 0
+    let freeMem = 0
+    let available = 0
+
+    if (process.platform === 'darwin') {
+      try {
+        // Use vm_stat for more accurate memory reporting on macOS
+        const { stdout: vmStat } = await execAsync('vm_stat')
+
+        // Extract page size from vm_stat output
+        const pageSizeMatch = vmStat.match(/page size of (\d+) bytes/)
+        const pageSize = pageSizeMatch ? parseInt(pageSizeMatch[1]) : 4096
+
+        // Parse vm_stat output
+        const freeMatch = vmStat.match(/Pages free:\s+(\d+)/)
+        const activeMatch = vmStat.match(/Pages active:\s+(\d+)/)
+        const inactiveMatch = vmStat.match(/Pages inactive:\s+(\d+)/)
+        const speculativeMatch = vmStat.match(/Pages speculative:\s+(\d+)/)
+        const wiredMatch = vmStat.match(/Pages wired down:\s+(\d+)/)
+        const compressedMatch = vmStat.match(/Pages stored in compressor:\s+(\d+)/)
+
+        const freePages = freeMatch ? parseInt(freeMatch[1]) : 0
+        const activePages = activeMatch ? parseInt(activeMatch[1]) : 0
+        const inactivePages = inactiveMatch ? parseInt(inactiveMatch[1]) : 0
+        const speculativePages = speculativeMatch ? parseInt(speculativeMatch[1]) : 0
+        const wiredPages = wiredMatch ? parseInt(wiredMatch[1]) : 0
+        const compressedPages = compressedMatch ? parseInt(compressedMatch[1]) : 0
+
+        // Calculate memory to match Activity Monitor exactly
+        // Activity Monitor shows "Memory Used" as the memory that apps are actively using
+        // This includes: Active + Wired (but NOT compressed, as compressed is a space-saving technique)
+        // The compressed pages represent memory that's been compressed to save space, not additional usage
+
+        // App Memory (what Activity Monitor shows as "Memory Used") = Active + Wired
+        const appMemoryPages = activePages + wiredPages
+        usedMem = appMemoryPages * pageSize
+
+        // Free memory includes: Free + Inactive + Speculative (all can be reclaimed)
+        freeMem = (freePages + inactivePages + speculativePages) * pageSize
+
+        // Available is the same as free
+        available = freeMem
+
+
+
+      } catch (error) {
+        console.warn('Failed to get vm_stat, falling back to os module:', error)
+        // Fallback to Node.js os module
+        freeMem = os.freemem()
+        usedMem = totalMem - freeMem
+        available = freeMem
+      }
+    } else {
+      // Non-macOS platforms use Node.js os module
+      freeMem = os.freemem()
+      usedMem = totalMem - freeMem
+      available = freeMem
+    }
 
     let swapTotal = 0
     let swapUsed = 0
@@ -191,7 +247,7 @@ export class TelemetrySampler extends EventEmitter {
       total: totalMem,
       used: usedMem,
       free: freeMem,
-      available: freeMem,
+      available,
       swapTotal,
       swapUsed,
       swapFree
@@ -236,7 +292,7 @@ export class TelemetrySampler extends EventEmitter {
             }
           }
         }
-      } catch {}
+      } catch { }
     }
 
     return {
@@ -275,7 +331,7 @@ export class TelemetrySampler extends EventEmitter {
             })
           }
         }
-      } catch {}
+      } catch { }
     }
 
     return {

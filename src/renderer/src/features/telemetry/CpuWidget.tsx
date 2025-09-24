@@ -2,6 +2,8 @@ import React, { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
 import type { RootState } from '../../app/store'
+import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
+import { usePerformanceBaseline } from '../../hooks/usePerformanceBaseline'
 
 const MAX_DATA_POINTS = 240 // 60 seconds at 250ms intervals
 
@@ -10,58 +12,92 @@ const CpuWidget: React.FC = React.memo(() => {
   const latestCpu = cpuData[cpuData.length - 1]
   const plotRef = useRef<HTMLDivElement>(null)
 
+  // Add performance measurement
+  const { logMetrics } = usePerformanceBaseline('cpu-widget', cpuData.length, true)
+
+
+
+  const layout = {
+    autosize: true,
+    height: 200,
+    margin: { t: 10, r: 10, b: 30, l: 40 },
+    xaxis: {
+      type: 'date' as const,
+      title: { text: '' },
+      showgrid: false,
+      tickformat: '%H:%M:%S'
+    },
+    yaxis: {
+      title: { text: 'Usage (%)' },
+      range: [0, 100],
+      showgrid: true,
+      gridcolor: 'rgba(0,0,0,0.1)'
+    },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    font: { size: 10 }
+  }
+
+  const config = {
+    displayModeBar: false,
+    responsive: true
+  }
+
+
+  // Initialize chart once with empty data
   useEffect(() => {
-    if (!plotRef.current || cpuData.length === 0) return
+    if (!plotRef.current) return
 
-    // Take only the last MAX_DATA_POINTS
-    const displayData = cpuData.slice(-MAX_DATA_POINTS)
+    const initialData = [{
+      x: [],
+      y: [],
+      type: 'scatter' as const,
+      mode: 'lines' as const,
+      name: 'CPU Usage',
+      line: { color: '#3B82F6', width: 2 },
+      fill: 'tozeroy' as const,
+      fillcolor: 'rgba(59, 130, 246, 0.2)'
+    }]
 
-    const data = [
-      {
-        x: displayData.map(d => new Date(d.timestamp)),
-        y: displayData.map(d => d.usage),
-        type: 'scatter' as const,
-        mode: 'lines' as const,
-        name: 'CPU Usage',
-        line: { color: '#3B82F6', width: 2 },
-        fill: 'tozeroy' as const,
-        fillcolor: 'rgba(59, 130, 246, 0.2)'
-      }
-    ]
-
-    const layout = {
-      autosize: true,
-      height: 200,
-      margin: { t: 10, r: 10, b: 30, l: 40 },
-      xaxis: {
-        type: 'date' as const,
-        title: '',
-        showgrid: false,
-        tickformat: '%H:%M:%S'
-      },
-      yaxis: {
-        title: 'Usage (%)',
-        range: [0, 100],
-        showgrid: true,
-        gridcolor: 'rgba(0,0,0,0.1)'
-      },
-      paper_bgcolor: 'transparent',
-      plot_bgcolor: 'transparent',
-      font: { size: 10 }
-    }
-
-    const config = {
-      displayModeBar: false,
-      responsive: true
-    }
-
-    Plotly.newPlot(plotRef.current, data, layout, config)
+    // Initialize once with newPlot
+    Plotly.newPlot(plotRef.current, initialData, layout, config)
 
     return () => {
       if (plotRef.current) {
         Plotly.purge(plotRef.current)
       }
     }
+  }, [])
+
+
+
+  // Update chart data using Plotly.react (optimized!)
+  useEffect(() => {
+    if (!plotRef.current || cpuData.length === 0) return
+
+    // Take only the last MAX_DATA_POINTS
+    const displayData = cpuData.slice(-MAX_DATA_POINTS)
+
+    const updatedData = [{
+      x: displayData.map(d => d.timestamp),
+      y: displayData.map(d => d.usage),
+      type: 'scatter' as const,
+      mode: 'lines' as const,
+      name: 'CPU Usage',
+      line: { color: '#3B82F6', width: 2 },
+      fill: 'tozeroy' as const,
+      fillcolor: 'rgba(59, 130, 246, 0.2)'
+    }]
+
+    // Use Plotly.react for efficient updates - pass layout and config for consistency
+    const plotlyMeasurementId = measurePlotlyOperation('react', 'cpu-widget')
+
+    Plotly.react(plotRef.current, updatedData, layout, config).then(() => {
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    }).catch((error) => {
+      console.error('Plotly.react failed:', error)
+      performanceMeasurement.endMeasurement(plotlyMeasurementId)
+    })
   }, [cpuData])
 
   const formatUsage = (usage: number) => `${usage.toFixed(1)}%`
@@ -72,7 +108,16 @@ const CpuWidget: React.FC = React.memo(() => {
     <div className="card" data-testid="cpu-widget">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white">CPU Usage</h3>
-        <div className="text-sm text-gray-500 dark:text-gray-400">{cpuData.length} samples</div>
+        <div className="flex items-center gap-2">
+          <div className="text-sm text-gray-500 dark:text-gray-400">{cpuData.length} samples</div>
+          <button
+            onClick={logMetrics}
+            className="text-xs px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+            title="Log performance metrics to console"
+          >
+            📊
+          </button>
+        </div>
       </div>
 
       {latestCpu ? (
