@@ -1,0 +1,147 @@
+# Environment Variables & Secrets
+.env
+.env.*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Certificates & Keys
+*.pem
+*.p12
+*.pfx
+*.cer
+*.crt
+*.key
+*.pub
+id_rsa*
+id_ed25519*
+.ssh/
+certificates/
+
+# Build & Distribution
+dist/
+dist-electron/
+build/
+out/
+release/
+app/
+.cache/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.yarn/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+
+# IDE & Editor Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs & Debugging
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm/
+crash-reports/
+debug.log
+
+# Runtime & Temporary Files
+*.tmp
+*.temp
+*.pid
+*.seed
+*.pid.lock
+.coverage/
+.nyc_output/
+
+# Testing
+coverage/
+.coverage/
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+test-results.xml
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Electron Specific
+app/
+dist-electron/
+release/
+*.dmg
+*.zip
+*.tar.gz
+*.deb
+*.rpm
+*.AppImage
+*.snap
+
+# TypeScript
+*.tsbuildinfo
+.tscache/
+
+# Vite
+.vite/
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+# Miscellaneous
+.eslintcache
+.parcel-cache/
+.cache/
+.temp/
+.tmp/
+*.tgz
+*.tar.gz
+.lock-wscript
+.wafpickle-N
+.*.swp
+._*
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Auto-generated files
+stats.html
+bundle-analyzer-report.html
+
+# Claude files
+claude.md
+.claude/
+PRD.md

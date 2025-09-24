@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+out/
+*.min.js
+*.min.css
+*.config.js
+*.config.ts
+CHANGELOG.md
