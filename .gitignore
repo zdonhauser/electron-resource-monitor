@@ -26,7 +26,6 @@ dist-electron/
 build/
 out/
 release/
-app/
 .cache/
 
 # Dependencies
@@ -39,7 +38,6 @@ node_modules/
 .yarn/install-state.gz
 pnpm-lock.yaml
 yarn.lock
-package-lock.json
 
 # IDE & Editor Files
 .vscode/
@@ -100,7 +98,6 @@ test-results.xml
 *.db-journal
 
 # Electron Specific
-app/
 dist-electron/
 release/
 out/
