@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import type { RootState } from '../../app/store'
-import type { ProcessInfo } from '../../../../shared/types/telemetry'
+import { selectProcessData, selectLatestProcess } from '../../app/telemetrySlice'
+import type { ProcessInfo } from '@shared/types/telemetry'
 
 type SortField = 'cpu' | 'memory' | 'name' | 'pid'
 type SortOrder = 'asc' | 'desc'
 
 const ProcessWidget: React.FC = React.memo(() => {
-  const processData = useSelector((state: RootState) => state.telemetry.processes.data)
-  const latestProcess = processData[processData.length - 1]
+  const processData = useSelector(selectProcessData)
+  const latestProcess = useSelector(selectLatestProcess)
   const [sortField, setSortField] = useState<SortField>('cpu')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [searchTerm, setSearchTerm] = useState('')
@@ -25,12 +25,12 @@ const ProcessWidget: React.FC = React.memo(() => {
   const filteredAndSortedProcesses = React.useMemo(() => {
     if (!latestProcess?.processes) return []
 
-    let processes = latestProcess.processes.filter(process =>
+    let processes = latestProcess.processes.filter((process: ProcessInfo) =>
       process.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       process.pid.toString().includes(searchTerm)
     )
 
-    processes.sort((a, b) => {
+    processes.sort((a: ProcessInfo, b: ProcessInfo) => {
       let aValue: string | number = a[sortField]
       let bValue: string | number = b[sortField]
 

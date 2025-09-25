@@ -1,15 +1,15 @@
 import React, { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
-import type { RootState } from '../../app/store'
+import { selectCpuData, selectLatestCpu } from '../../app/telemetrySlice'
 import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
 import { usePerformanceBaseline } from '../../hooks/usePerformanceBaseline'
 
 const MAX_DATA_POINTS = 240 // 60 seconds at 250ms intervals
 
 const CpuWidget: React.FC = React.memo(() => {
-  const cpuData = useSelector((state: RootState) => state.telemetry.cpu.data)
-  const latestCpu = cpuData[cpuData.length - 1]
+  const cpuData = useSelector(selectCpuData)
+  const latestCpu = useSelector(selectLatestCpu)
   const plotRef = useRef<HTMLDivElement>(null)
 
   // Add performance measurement

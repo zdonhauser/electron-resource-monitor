@@ -1,14 +1,15 @@
 import React, { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
-import type { RootState } from '../../app/store'
+
+import { selectMemoryData, selectLatestMemory } from '../../app/telemetrySlice'
 import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
 
 const MAX_DATA_POINTS = 240 // 60 seconds at 250ms intervals
 
 const MemoryWidget: React.FC = React.memo(() => {
-  const memoryData = useSelector((state: RootState) => state.telemetry.memory.data)
-  const latestMemory = memoryData[memoryData.length - 1]
+  const memoryData = useSelector(selectMemoryData)
+  const latestMemory = useSelector(selectLatestMemory)
   const plotRef = useRef<HTMLDivElement>(null)
 
 

@@ -1,30 +1,20 @@
 import React, { useEffect, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import Plotly from 'plotly.js-basic-dist-min'
-import type { RootState } from '../../app/store'
-import type { NetworkInterface } from '../../../../shared/types/telemetry'
+
+import { selectNetworkData, selectLatestNetwork } from '../../app/telemetrySlice'
+import type { NetworkInterface } from '@shared/types/telemetry'
 import { measurePlotlyOperation, performanceMeasurement } from '../../utils/PerformanceMeasurement'
 
 const MAX_DATA_POINTS = 240 // 4 minutes at 1 second intervals
 
 const NetworkWidget: React.FC = React.memo(() => {
-  const networkData = useSelector((state: RootState) => state.telemetry.network.data)
-  const latestNetwork = networkData[networkData.length - 1]
+  const networkData = useSelector(selectNetworkData)
+  const latestNetwork = useSelector(selectLatestNetwork)
   const plotRef = useRef<HTMLDivElement>(null)
 
 
-  const formatBytes = (bytes: number): string => {
-    const units = ['B/s', 'KB/s', 'MB/s', 'GB/s']
-    let size = bytes
-    let unitIndex = 0
 
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024
-      unitIndex++
-    }
-
-    return `${size.toFixed(1)} ${units[unitIndex]}`
-  }
 
   const formatTotalBytes = (bytes: number): string => {
     const units = ['B', 'KB', 'MB', 'GB', 'TB']
@@ -278,7 +268,7 @@ const NetworkWidget: React.FC = React.memo(() => {
           )}
 
           <div className="text-xs text-gray-500 dark:text-gray-400">
-            Last updated: {new Date(latestNetwork.timestamp).toLocaleTimeString()}
+            Last updated: {new Date(latestNetwork?.timestamp || Date.now()).toLocaleTimeString()}
           </div>
         </div>
       ) : (

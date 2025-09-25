@@ -11,12 +11,13 @@ import {
   setConnectionStatus
 } from './app/telemetrySlice'
 
+import Layout from './components/Layout'
 import Dashboard from './features/telemetry/Dashboard'
 import Settings from './features/settings/Settings'
 import Alerts from './features/alerts/Alerts'
 
 // Only import performance test page in development
-const PerformanceTestPage = import.meta.env.DEV 
+const PerformanceTestPage = import.meta.env.DEV
   ? React.lazy(() => import('./components/PerformanceTestPage'))
   : null
 
@@ -80,22 +81,24 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/alerts" element={<Alerts />} />
-        {/* Performance test page only available in development */}
-        {import.meta.env.DEV && PerformanceTestPage && (
-          <Route 
-            path="/performance-test" 
-            element={
-              <Suspense fallback={<div className="p-6">Loading performance test...</div>}>
-                <PerformanceTestPage />
-              </Suspense>
-            } 
-          />
-        )}
-      </Routes>
+      <Layout>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/alerts" element={<Alerts />} />
+          {/* Performance test page only available in development */}
+          {import.meta.env.DEV && PerformanceTestPage && (
+            <Route
+              path="/performance-test"
+              element={
+                <Suspense fallback={<div>Loading performance test...</div>}>
+                  <PerformanceTestPage />
+                </Suspense>
+              }
+            />
+          )}
+        </Routes>
+      </Layout>
     </div>
   )
 }

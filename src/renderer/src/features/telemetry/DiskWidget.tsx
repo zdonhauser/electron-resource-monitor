@@ -1,11 +1,11 @@
 import React from 'react'
 import { useSelector } from 'react-redux'
-import type { RootState } from '../../app/store'
-import type { DiskDevice, StorageBreakdown } from '../../../../shared/types/telemetry'
+import { selectDiskData, selectLatestDisk } from '../../app/telemetrySlice'
+import type { DiskDevice } from '@shared/types/telemetry'
 
 const DiskWidget: React.FC = React.memo(() => {
-  const diskData = useSelector((state: RootState) => state.telemetry.disk.data)
-  const latestDisk = diskData[diskData.length - 1]
+  const diskData = useSelector(selectDiskData)
+  const latestDisk = useSelector(selectLatestDisk)
 
   const formatBytes = (bytes: number): string => {
     const units = ['B', 'KB', 'MB', 'GB', 'TB']

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
-import type { RootState } from '../app/store'
+import { selectCpuData } from '../app/telemetrySlice'
 import CpuWidget from '../features/telemetry/CpuWidget'
 import PerformanceMonitor from './PerformanceMonitor'
 import { performanceMeasurement } from '../utils/PerformanceMeasurement'
@@ -12,7 +12,7 @@ import { performanceMeasurement } from '../utils/PerformanceMeasurement'
  * It will not be included in production builds.
  */
 const PerformanceTestPage: React.FC = () => {
-  const cpuData = useSelector((state: RootState) => state.telemetry.cpu.data)
+  const cpuData = useSelector(selectCpuData)
   const [isMonitoring, setIsMonitoring] = useState(false)
   const [showMonitor, setShowMonitor] = useState(true)
 
